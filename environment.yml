@@ -1,0 +1,16 @@
+name: carnd-final
+channels:
+    - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
+dependencies:
+    - python==3.5.2
+    - numpy==1.13.1
+    - scipy==0.19.0
+    - h5py==2.7.0
+    - tensorflow-gpu==1.2.1
+    - pip:
+        - keras==2.0.4
+        - Flask==0.11.1
+        - attrdict==2.0.0
+        - eventlet==0.19.0
+        - python-socketio==1.6.1
+        - Pillow==2.2.1
