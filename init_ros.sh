@@ -14,4 +14,5 @@ rm CMakeLists.txt
 catkin_init_workspace
 cd ..
 catkin_make
-#ERROR: Could not find a package configuration file provided by "dbw_mkz_msgs"
+
+chmod u+x ./src/twist_controller/dbw_node.py ./src/waypoint_loader/waypoint_loader.py ./src/waypoint_updater/waypoint_updater.py ./src/tl_detector/tl_detector.py ./src/tl_detector/light_publisher.py ./src/camera_info_publisher/yaml_to_camera_info_publisher.py
