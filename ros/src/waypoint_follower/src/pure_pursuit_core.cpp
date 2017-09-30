@@ -256,6 +256,7 @@ geometry_msgs::Twist PurePursuit::calcTwist(double curvature, double cmd_velocit
   static double prev_angular_velocity = 0;
 
   geometry_msgs::Twist twist;
+  ROS_ERROR("Twist velocity %1.5f ", cmd_velocity);
   twist.linear.x = cmd_velocity;
   if (!following_flag)
   {
@@ -271,7 +272,7 @@ geometry_msgs::Twist PurePursuit::calcTwist(double curvature, double cmd_velocit
   return twist;
 }
 
-void PurePursuit::getNextWaypoint()
+void PurePursuit::getNextWaypoint()//, See how many next points used for /final_waypoints with a maximum_lookahead_distance defined by v x 1
 {
   int path_size = static_cast<int>(current_waypoints_.getSize());
 
@@ -363,7 +364,7 @@ geometry_msgs::TwistStamped PurePursuit::go()
   bool interpolate_flag = false;
 
   calcLookaheadDistance(1);
-  // search next waypoint
+  // search next waypoint, See how many next points used for /final_waypoints with a maximum_lookahead_distance defined by v x 10
   getNextWaypoint();
   if (num_of_next_waypoint_ == -1)
   {
@@ -377,6 +378,21 @@ geometry_msgs::TwistStamped PurePursuit::go()
       num_of_next_waypoint_ == (static_cast<int>(current_waypoints_.getSize() - 1)))
   {
     position_of_next_target_ = current_waypoints_.getWaypointPosition(num_of_next_waypoint_);
+    /* position_of_next_target_  is something like:
+      pose:
+        position:
+          x: 1625.09
+          y: 1153.31
+          z: 0.0
+
+      calcCurvature :
+                     | y' |
+        kappa = ----------------
+                 √( a~2 + b~2)
+
+      calcTwist
+    */
+
     return outputTwist(calcTwist(calcCurvature(position_of_next_target_), getCmdVelocity(0)));
   }
 
