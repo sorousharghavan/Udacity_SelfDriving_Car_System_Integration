@@ -56,9 +56,18 @@ class DBWNode(object):
         # TODO: Create `TwistController` object
         # self.controller = TwistController(<Arguments you wish to provide>)
 
-        # TODO: Subscribe to all the topics you need to
+        # TODO: Subscribe to all the topics you need to.
+        # The dbw_node subscribes to the /current_velocity topic
+        # along with the /twist_cmd topic to receive
+        # TARGET linear(40 / 3.6) and angular velocities
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
 
         self.loop()
+
+    def twist_cb(self, twiststamped):
+        rospy.logwarn("BEGIN_TS===")
+        rospy.logwarn(twiststamped)
+        rospy.logwarn("END_TS=====")
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
