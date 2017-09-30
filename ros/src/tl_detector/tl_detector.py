@@ -10,6 +10,8 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import math
+import sys
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -100,8 +102,19 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        # Min distance
+        minDist_idx = 0
+        minDist_val = sys.float_info.max
+        
+        # Loop through all waypoints
+        for idx, wp in enumerate(self.waypoints):
+            dis = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
+            val = dis(wp.pose.pose.position, pose.position)
+            if val < minDist_val:
+                minDist_val = val
+                minDist_idx = idx    
+        
+        return minDist_idx
 
 
     def project_to_image_plane(self, point_in_world):
@@ -133,12 +146,23 @@ class TLDetector(object):
         except (tf.Exception, tf.LookupException, tf.ConnectivityException):
             rospy.logerr("Failed to find camera to map transform")
 
-        #TODO Use tranform and rotation to calculate 2D position of light in image
+        # Calculate 2D position of light in image
+        euler = tf.transformations.euler_from_quaternion(rot)
+        sinyaw = math.sin(euler[2])
+        cosyaw = math.cos(euler[2])
+        
+        x = point_in_world.x * cosyaw - point_in_world.y * sinyaw + trans[0]
+        y = point_in_world.x * sinyaw + point_in_world.y * cosyaw + trans[1]
+        z = point_in_world.z + trans[2]
+        
+        if x != 0:
+            u = int((- y / x) * fx + image_width / 2)
+            v = int((- z / x) * fy + image_height / 2)
+        else:
+            u = 0
+            v = 0
 
-        x = 0
-        y = 0
-
-        return (x, y)
+        return (u, v)
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
