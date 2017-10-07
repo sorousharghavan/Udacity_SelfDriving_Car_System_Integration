@@ -184,23 +184,23 @@ class TLDetector(object):
 
         img_width = cv_image.shape[1]
         img_height = cv_image.shape[0]
-        crop_size = 25
+        vertical_crop_size = 25
+        horizontal_crop_size = 5
 
 	#Check if x,y are inside image
 	if x < 0 or y < 0 or x > img_width or y > img_height:
 	    return TrafficLight.UNKNOWN
 	else:
             #Crop traffic light from image and resize it to (50,50)
-            left = x - crop_size if (x-crop_size) > 0 else 0
-            right = x + crop_size if (x+crop_size) < img_width else img_width
-            bottom = y + crop_size if (y+crop_size) < img_height else img_height
-            top = y - crop_size if (y-crop_size) > 0 else 0
+            left = x - horizontal_crop_size if (x-horizontal_crop_size) > 0 else 0
+            right = x + horizontal_crop_size if (x+horizontal_crop_size) < img_width else img_width
+            bottom = y + vertical_crop_size if (y+vertical_crop_size) < img_height else img_height
+            top = y - vertical_crop_size if (y-vertical_crop_size) > 0 else 0
             
             cropped_image = cv_image[top:bottom,left:right]
-            resized_image = cv2.resize(cropped_image, (crop_size*2,crop_size*2), interpolation=cv2.INTER_CUBIC)
 
             #Get classification
-            return self.light_classifier.get_classification(resized_image)
+            return self.light_classifier.get_classification(cropped_image)
         
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
