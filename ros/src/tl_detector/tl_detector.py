@@ -104,17 +104,17 @@ class TLDetector(object):
         """
         # Min distance
 
-        minDist_idx = 0
+        minDist_idx = -1
         minDist_val = sys.float_info.max
 
         # Loop through all waypoints
-        """for idx, wp in enumerate(self.waypoints):
+        for idx, wp in enumerate(self.waypoints):
             dis = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
             val = dis(wp.pose.pose.position, pose.position)
             if val < minDist_val:
                 minDist_val = val
                 minDist_idx = idx
-        """
+        
         return minDist_idx
 
 
@@ -132,8 +132,9 @@ class TLDetector(object):
 
         # fx = self.config['camera_info']['focal_length_x']
         # fy = self.config['camera_info']['focal_length_y']
-		fx = 2650
-		fy = 2250
+
+	fx = 2650
+	fy = 2250
         image_width = self.config['camera_info']['image_width']
         image_height = self.config['camera_info']['image_height']
 
@@ -220,7 +221,8 @@ class TLDetector(object):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         # Find the closest visible traffic light (if one exists)
-		minDist_idx = -1
+
+	minDist_idx = -1
         minDist_val = sys.float_info.max
         
         # Loop through all stop line positions
