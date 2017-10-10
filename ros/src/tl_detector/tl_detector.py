@@ -28,7 +28,7 @@ class TLDetector(object):
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         '''
-        /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and 
+        /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
         helps you acquire an accurate ground truth data source for the traffic light
         classifier by sending the current color state of all traffic lights in the
         simulator. When testing on the vehicle, the color state will not be available. You'll need to
@@ -106,15 +106,15 @@ class TLDetector(object):
 
         minDist_idx = 0
         minDist_val = sys.float_info.max
-        
+
         # Loop through all waypoints
-        for idx, wp in enumerate(self.waypoints):
+        """for idx, wp in enumerate(self.waypoints):
             dis = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
             val = dis(wp.pose.pose.position, pose.position)
             if val < minDist_val:
                 minDist_val = val
-                minDist_idx = idx    
-        
+                minDist_idx = idx
+        """
         return minDist_idx
 
 
@@ -148,16 +148,16 @@ class TLDetector(object):
 
         except (tf.Exception, tf.LookupException, tf.ConnectivityException):
             rospy.logerr("Failed to find camera to map transform")
-        
+
         # Calculate 2D position of light in image
         euler = tf.transformations.euler_from_quaternion(rot)
         sinyaw = math.sin(euler[2])
         cosyaw = math.cos(euler[2])
-        
+
         x = point_in_world.x * cosyaw - point_in_world.y * sinyaw + trans[0]
         y = point_in_world.x * sinyaw + point_in_world.y * cosyaw + trans[1]
         z = point_in_world.z + trans[2]
-        
+
         if x != 0:
             u = int((- y / x) * fx + image_width / 2)
             v = int((- z / x) * fy + image_height / 2)
