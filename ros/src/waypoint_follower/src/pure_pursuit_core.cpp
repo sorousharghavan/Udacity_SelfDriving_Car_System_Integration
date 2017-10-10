@@ -256,7 +256,7 @@ geometry_msgs::Twist PurePursuit::calcTwist(double curvature, double cmd_velocit
   static double prev_angular_velocity = 0;
 
   geometry_msgs::Twist twist;
-  ROS_ERROR("Twist velocity %1.5f ", cmd_velocity);
+  //ROS_ERROR("Twist velocity %1.5f ", cmd_velocity);
   twist.linear.x = cmd_velocity;
   if (!following_flag)
   {
