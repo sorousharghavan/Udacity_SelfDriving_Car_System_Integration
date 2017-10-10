@@ -102,14 +102,30 @@ class WaypointUpdater(object):
             else:
                 outList = self.waypoints[minDist_idx:minDist_idx+LOOKAHEAD_WPS]
 
+            prev_idx = minDist_idx - 1
+            if prev_idx < 0:
+                prev_idx = len(self.waypoints)-2
+
+
             lane = Lane()
             lane.header = self.waypoints_header
-            lane.waypoints = outList
-            rospy.logwarn("===BEG_final_waypoints_pub, size: %d ===" % (len(outList)))
-            self.final_waypoints_pub.publish(lane)
-            rospy.logwarn(lane)
-            rospy.logwarn("===END_final_waypoints_pub===")
+            lane.waypoints = [self.waypoints[prev_idx]] + outList
+            #rospy.logwarn("===BEG_final_waypoints_pub, size: %d ===" % (len(outList)))
+            """rospy.logwarn("BEGIN_pose===")
+            rospy.logwarn(self.pose.pose.position)
+            rospy.logwarn("END_pose===")
 
+            rospy.logwarn("BEGIN_prev_pos===")
+            rospy.logwarn(outList[0].pose.pose.position)
+            rospy.logwarn("END_prev_pos===")
+
+            rospy.logwarn("BEGIN_current_pos===")
+            rospy.logwarn(outList[1].pose.pose.position)
+            rospy.logwarn("END_current_pos===")
+            #rospy.logwarn(lane)
+            #rospy.logwarn("===END_final_waypoints_pub===")
+            """
+            self.final_waypoints_pub.publish(lane)
 
 
 
