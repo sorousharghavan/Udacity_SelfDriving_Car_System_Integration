@@ -34,7 +34,7 @@ class WaypointUpdater(object):
         self.lights = []
 
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1, buff_size=10000000)
 
 
         # : Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
