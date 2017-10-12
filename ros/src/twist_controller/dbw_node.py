@@ -89,7 +89,7 @@ class DBWNode(object):
         rospy.Subscriber('/final_waypoints', Lane, self.waypoints_cb, queue_size=1)
 
         self.pid_throttle = PID(-0.5, -0.0001, -0.05, decel_limit, accel_limit)
-        self.pid_steerangel = PID(10 , 1e-4, 50, -1*(30/180.0)*math.pi, (30/180.0)*math.pi)
+        self.pid_steerangel = PID(1 , 1e-4, 0, -1*(30/180.0)*math.pi, (30/180.0)*math.pi)
         self.yaw_steerangel = YawController(
                     wheel_base, steer_ratio, 2,
                     max_lat_accel, max_steer_angle
