@@ -81,15 +81,15 @@ class DBWNode(object):
         self.current_velocity_ = TwistStamped()
         self.dbw_isEnable_ = True
 
-        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
-        rospy.Subscriber('/current_velocity', TwistStamped, self.currentV_cb)
-        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbwEnable_cb)
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb, queue_size=1)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.currentV_cb, queue_size=1)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbwEnable_cb, queue_size=1)
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/final_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+        rospy.Subscriber('/final_waypoints', Lane, self.waypoints_cb, queue_size=1)
 
         self.pid_throttle = PID(-0.5, -0.0001, -0.05, decel_limit, accel_limit)
-        self.pid_steerangel = PID(0.1, 0, 0, -1*30/180*math.pi, 30/180*math.pi)
+        self.pid_steerangel = PID(10 , 1e-4, 50, -1*(30/180.0)*math.pi, (30/180.0)*math.pi)
         self.yaw_steerangel = YawController(
                     wheel_base, steer_ratio, 2,
                     max_lat_accel, max_steer_angle
@@ -120,12 +120,12 @@ class DBWNode(object):
         proj_y = proj_norm * n_y
         self.d = distance(x_x, x_y, proj_x, proj_y)
 
-        center_x = 1000 - self.final_waypoints[0].pose.pose.position.x
-        center_y = 1000 - self.final_waypoints[0].pose.pose.position.y
+        center_x = 1559 - self.final_waypoints[0].pose.pose.position.x
+        center_y = 2152 - self.final_waypoints[0].pose.pose.position.y
         centerToPos = distance(center_x, center_y, x_x, x_y)
         centerToRef = distance(center_x, center_y, proj_x, proj_y)
 
-        if(centerToPos > centerToRef):
+        if(centerToPos < centerToRef):
             self.d *= -1
 
         """
