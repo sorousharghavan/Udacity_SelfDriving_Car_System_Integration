@@ -103,7 +103,6 @@ class TLDetector(object):
 
         """
         # Min distance
-
         minDist_idx = -1
         minDist_val = sys.float_info.max
 
