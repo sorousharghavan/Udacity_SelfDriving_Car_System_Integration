@@ -34,8 +34,6 @@ pip install -r requirements.txt
 cd ros
 catkin_make
 source devel/setup.sh
-
-# added by hubq
 chmod u+x ./src/twist_controller/dbw_node.py ./src/waypoint_loader/waypoint_loader.py ./src/waypoint_updater/waypoint_updater.py ./src/tl_detector/tl_detector.py ./src/tl_detector/light_publisher.py ./src/camera_info_publisher/yaml_to_camera_info_publisher.py ./src/styx/server.py ./src/styx/unity_simulator_launcher.sh
 
 roslaunch launch/styx.launch

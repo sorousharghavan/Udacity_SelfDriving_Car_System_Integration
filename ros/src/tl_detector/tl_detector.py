@@ -103,17 +103,17 @@ class TLDetector(object):
 
         """
         # Min distance
-        minDist_idx = 0
+        minDist_idx = -1
         minDist_val = sys.float_info.max
 
         # Loop through all waypoints
-        """for idx, wp in enumerate(self.waypoints):
+        for idx, wp in enumerate(self.waypoints):
             dis = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
             val = dis(wp.pose.pose.position, pose.position)
             if val < minDist_val:
                 minDist_val = val
                 minDist_idx = idx
-        """
+        
         return minDist_idx
 
 
@@ -129,8 +129,11 @@ class TLDetector(object):
 
         """
 
-        fx = self.config['camera_info']['focal_length_x']
-        fy = self.config['camera_info']['focal_length_y']
+        # fx = self.config['camera_info']['focal_length_x']
+        # fy = self.config['camera_info']['focal_length_y']
+
+	fx = 2650
+	fy = 2250
         image_width = self.config['camera_info']['image_width']
         image_height = self.config['camera_info']['image_height']
 
@@ -182,11 +185,26 @@ class TLDetector(object):
 
         x, y = self.project_to_image_plane(light.pose.pose.position)
 
-        #TODO use light location to zoom in on traffic light in image
+        img_width = cv_image.shape[1]
+        img_height = cv_image.shape[0]
+        vertical_crop_size = 25
+        horizontal_crop_size = 5
 
-        #Get classification
-        return self.light_classifier.get_classification(cv_image)
+	#Check if x,y are inside image
+	if x < 0 or y < 0 or x > img_width or y > img_height:
+	    return TrafficLight.UNKNOWN
+	else:
+		#Crop traffic light from image and resize it to (50,50)
+		left = x - horizontal_crop_size if (x-horizontal_crop_size) > 0 else 0
+		right = x + horizontal_crop_size if (x+horizontal_crop_size) < img_width else img_width
+		bottom = y + vertical_crop_size if (y+vertical_crop_size) < img_height else img_height
+		top = y - vertical_crop_size if (y-vertical_crop_size) > 0 else 0
+		
+		cropped_image = cv_image[top:bottom,left:right]
 
+		#Get classification
+		return self.light_classifier.get_classification(cropped_image)
+        
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
@@ -201,7 +219,20 @@ class TLDetector(object):
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
-        #TODO find the closest visible traffic light (if one exists)
+        # Find the closest visible traffic light (if one exists)
+
+	minDist_idx = -1
+        minDist_val = sys.float_info.max
+        
+        # Loop through all stop line positions
+        for idx, stop_line in enumerate(stop_line_positions):
+            dis = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
+            val = dis(stop_line.pose.pose.position, car_position.position)
+            if val < minDist_val:
+                minDist_val = val
+                minDist_idx = idx
+        
+        light = stop_line_positions[minDist_idx]
 
         if light:
             state = self.get_light_state(light)
