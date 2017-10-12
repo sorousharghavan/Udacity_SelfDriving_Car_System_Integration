@@ -9,6 +9,7 @@ from styx_msgs.msg import Lane, Waypoint
 from twist_controller import Controller
 from yaw_controller import YawController
 from pid import PID
+import time
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -89,30 +90,86 @@ class DBWNode(object):
         rospy.Subscriber('/final_waypoints', Lane, self.waypoints_cb, queue_size=1)
 
         self.pid_throttle = PID(-0.5, -0.0001, -0.05, decel_limit, accel_limit)
-        self.pid_steerangel = PID(1 , 1e-4, 0, -1*(30/180.0)*math.pi, (30/180.0)*math.pi)
+        self.pid_steerangel = PID(1 , 0, 0.5, -1*(30/180.0)*math.pi, (30/180.0)*math.pi)
         self.yaw_steerangel = YawController(
                     wheel_base, steer_ratio, 2,
                     max_lat_accel, max_steer_angle
         )
-
+        self.pred_pos = {
+            "topic"          : [0, 0],
+            "topic_prev"     : [0, 0],
+            "topic_vel" : 0,
+            "topic_angle" : 0,
+            "pred"      : [0, 0],
+            "pred_prev" : [0, 0],
+            "last_update_pos_t"  : 0,
+            "last_update_vel_t"  : 0
+        }
         self.loop()
 
     def pose_cb(self, msg):
         self.pose = msg
-        rospy.logwarn("=====2Current Car Position: (%f, %f)" % (self.pose.pose.position.x, self.pose.pose.position.y))
+        #rospy.logwarn("=====2Current Car Position: (%f, %f)" % (self.pose.pose.position.x, self.pose.pose.position.y))
 
 
     def waypoints_cb(self, msg):
         self.final_waypoints_header = msg.header
         self.final_waypoints = msg.waypoints
+        self.pred_pos['topic'] = [self.pose.pose.position.x, self.pose.pose.position.y]
+
+        # update velocity
+        if (self.current_velocity_.twist.linear.x != self.pred_pos['topic_vel']) or \
+           (self.current_velocity_.twist.angular.z != self.pred_pos['topic_angle']):
+            self.pred_pos['last_update_vel_t'] = time.time()
+
+        self.pred_pos['topic_vel'] = self.current_velocity_.twist.linear.x
+        self.pred_pos['topic_angle'] = self.current_velocity_.twist.angular.z
+
+        # update x-y coord
+        # first init
+        if self.pred_pos['last_update_pos_t'] == 0:
+            self.pred_pos['topic_prev'] = self.pred_pos['topic']
+            self.pred_pos['pred'] = self.pred_pos['topic']
+            self.pred_pos['pred_prev'] = self.pred_pos['topic']
+            self.pred_pos['last_update_pos_t'] = time.time()
+            self.pred_pos['last_update_vel_t'] = time.time()
+
+        # update value
+        else:
+            # need to predict location based on vel/angle, last updated location and time from update.
+            if (self.pred_pos['topic'][0]==self.pred_pos['topic_prev'][0]) and \
+               (self.pred_pos['topic'][1]==self.pred_pos['topic_prev'][1]):
+                current_t = time.time()
+                dt_v = (current_t - self.pred_pos['last_update_vel_t'])
+                if dt_v == 0:
+                    a_vel = 0
+                    a_angle = 0
+                else:
+                    a_vel = (self.current_velocity_.twist.linear.x - self.pred_pos['topic_vel']) / float(dt_v)
+                    a_angle = (self.current_velocity_.twist.angular.z - self.pred_pos['topic_angle']) / float(dt_v)
+
+                avg_vel = (2*self.pred_pos['topic_vel']+a_vel*dt_v) / 2.0
+                avg_ang = (2*self.pred_pos['topic_angle']+a_angle*dt_v) / 2.0
+
+                self.pred_pos['pred'][0] = self.pred_pos['pred_prev'][0] + avg_vel*dt_v*math.cos(avg_ang)
+                self.pred_pos['pred'][1] = self.pred_pos['pred_prev'][1] + avg_vel*dt_v*math.sin(avg_ang)
+
+            # update predict location using topic information
+            else:
+                self.pred_pos['pred'] = self.pred_pos['topic']
+                self.pred_pos['last_update_pos_t'] = time.time()
+
+            self.pred_pos['topic_prev'] = self.pred_pos['topic']
+            self.pred_pos['pred_prev']  = self.pred_pos['pred']
+
 
         n_x = self.final_waypoints[1].pose.pose.position.x -\
               self.final_waypoints[0].pose.pose.position.x
         n_y = self.final_waypoints[1].pose.pose.position.y -\
               self.final_waypoints[0].pose.pose.position.y
-        x_x = self.pose.pose.position.x - \
+        x_x = self.pred_pos['pred'][0] - \
               self.final_waypoints[0].pose.pose.position.x
-        x_y = self.pose.pose.position.y - \
+        x_y = self.pred_pos['pred'][1] - \
               self.final_waypoints[0].pose.pose.position.y
 
         proj_norm = (x_x*n_x+x_y*n_y) / (n_x*n_x+n_y*n_y)

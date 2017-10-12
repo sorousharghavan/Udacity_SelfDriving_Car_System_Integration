@@ -57,7 +57,7 @@ class TLDetector(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
+        self.waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -113,7 +113,7 @@ class TLDetector(object):
             if val < minDist_val:
                 minDist_val = val
                 minDist_idx = idx
-        
+
         return minDist_idx
 
 
@@ -199,12 +199,12 @@ class TLDetector(object):
 		right = x + horizontal_crop_size if (x+horizontal_crop_size) < img_width else img_width
 		bottom = y + vertical_crop_size if (y+vertical_crop_size) < img_height else img_height
 		top = y - vertical_crop_size if (y-vertical_crop_size) > 0 else 0
-		
+
 		cropped_image = cv_image[top:bottom,left:right]
 
 		#Get classification
 		return self.light_classifier.get_classification(cropped_image)
-        
+
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
@@ -223,7 +223,7 @@ class TLDetector(object):
 
 	minDist_idx = -1
         minDist_val = sys.float_info.max
-        
+
         # Loop through all stop line positions
         for idx, stop_line in enumerate(stop_line_positions):
             dis = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
@@ -231,7 +231,7 @@ class TLDetector(object):
             if val < minDist_val:
                 minDist_val = val
                 minDist_idx = idx
-        
+
         light = stop_line_positions[minDist_idx]
 
         if light:

@@ -51,7 +51,7 @@ class WaypointUpdater(object):
         #rospy.logwarn("END=====")
 
         self.pose = msg
-        rospy.logwarn("=====Current Car Position: (%f, %f)" % (self.pose.pose.position.x, self.pose.pose.position.y))
+        #rospy.logwarn("=====Current Car Position: (%f, %f)" % (self.pose.pose.position.x, self.pose.pose.position.y))
         self.publish_final()
 
 
