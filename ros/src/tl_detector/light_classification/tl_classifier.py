@@ -1,5 +1,7 @@
 from styx_msgs.msg import TrafficLight
-
+import cv2
+import numpy as np
+import time
 class TLClassifier(object):
     def __init__(self):
         self.boundaries = [
@@ -21,6 +23,9 @@ class TLClassifier(object):
 
         """
         img_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        #time_idx = time.time()
+        #fileName = "/home/huboqiang/Udacity_SelfDriving_Car_System_Integration/ros/image/tl.%f.png" % (time_idx)
+        #cv2.imwrite(fileName, image)
 
         for i,boundary in enumerate(self.boundaries):
             #convert to numpy arrays
@@ -30,5 +35,5 @@ class TLClassifier(object):
             mask = cv2.inRange(img_hsv, lower_color, upper_color)
             #count found colour pixels
             self.counters[i] = cv2.countNonZero(mask)
-        
+
         return self.colors[self.counters.index(max(self.counters))]

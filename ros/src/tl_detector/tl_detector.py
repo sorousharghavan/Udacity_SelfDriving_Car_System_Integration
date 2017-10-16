@@ -8,10 +8,11 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
-import cv2
 import yaml
 import math
 import sys
+import cv2
+import time
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -107,12 +108,13 @@ class TLDetector(object):
         minDist_val = sys.float_info.max
 
         # Loop through all waypoints
-        for idx, wp in enumerate(self.waypoints):
-            dis = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
-            val = dis(wp.pose.pose.position, pose.position)
-            if val < minDist_val:
-                minDist_val = val
-                minDist_idx = idx
+        if self.waypoints is not None:
+            for idx, wp in enumerate(self.waypoints):
+                dis = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
+                val = dis(wp.pose.pose.position, pose.position)
+                if val < minDist_val:
+                    minDist_val = val
+                    minDist_idx = idx
 
         return minDist_idx
 
@@ -132,8 +134,8 @@ class TLDetector(object):
         # fx = self.config['camera_info']['focal_length_x']
         # fy = self.config['camera_info']['focal_length_y']
 
-	fx = 2650
-	fy = 2250
+        fx = 2650
+        fy = 2250
         image_width = self.config['camera_info']['image_width']
         image_height = self.config['camera_info']['image_height']
 
@@ -165,6 +167,7 @@ class TLDetector(object):
             u = 0
             v = 0
 
+        rospy.logwarn("%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f" % (point_in_world.x, point_in_world.y, point_in_world.z, trans[0], trans[1], trans[2], euler[0], euler[1], euler[2], u, v))
         return (u, v)
 
     def get_light_state(self, light):
@@ -182,28 +185,29 @@ class TLDetector(object):
             return False
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        time_idx = time.time()
+        fileName = "/home/huboqiang/Udacity_SelfDriving_Car_System_Integration/ros/image/tl.%f.png" % (time_idx)
+        cv2.imwrite(fileName, cv_image)
 
         x, y = self.project_to_image_plane(light.pose.pose.position)
-
+        #rospy.logwarn("TL in the image |%d, %d| for %s: " % (x, y, fileName))
         img_width = cv_image.shape[1]
         img_height = cv_image.shape[0]
         vertical_crop_size = 25
         horizontal_crop_size = 5
 
-	#Check if x,y are inside image
-	if x < 0 or y < 0 or x > img_width or y > img_height:
-	    return TrafficLight.UNKNOWN
-	else:
-		#Crop traffic light from image and resize it to (50,50)
-		left = x - horizontal_crop_size if (x-horizontal_crop_size) > 0 else 0
-		right = x + horizontal_crop_size if (x+horizontal_crop_size) < img_width else img_width
-		bottom = y + vertical_crop_size if (y+vertical_crop_size) < img_height else img_height
-		top = y - vertical_crop_size if (y-vertical_crop_size) > 0 else 0
-
-		cropped_image = cv_image[top:bottom,left:right]
-
-		#Get classification
-		return self.light_classifier.get_classification(cropped_image)
+        #Check if x,y are inside image
+        if x < 0 or y < 0 or x > img_width or y > img_height:
+            return TrafficLight.UNKNOWN
+        else:
+		    #Crop traffic light from image and resize it to (50,50)
+            left = x - horizontal_crop_size if (x-horizontal_crop_size) > 0 else 0
+            right = x + horizontal_crop_size if (x+horizontal_crop_size) < img_width else img_width
+            bottom = y + vertical_crop_size if (y+vertical_crop_size) < img_height else img_height
+            top = y - vertical_crop_size if (y-vertical_crop_size) > 0 else 0
+            cropped_image = cv_image[top:bottom,left:right]
+            #Get classification
+            return self.light_classifier.get_classification(cropped_image)
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -214,30 +218,55 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        light = None
+        light_pos_closest = None
+        light_wp_closest = None
+        car_position = None
         light_positions = self.config['light_positions']
         if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+            car_position_wpIdx = self.get_closest_waypoint(self.pose.pose)
+            if car_position_wpIdx == -1:
+                return -1, TrafficLight.UNKNOWN
+            car_position = self.waypoints[car_position_wpIdx].pose.pose
 
         # Find the closest visible traffic light (if one exists)
-
-	minDist_idx = -1
-        minDist_val = sys.float_info.max
+        minDist_idx = -1
+        minDist_val = 25.0
+        if car_position is None:
+            return -1, TrafficLight.UNKNOWN
 
         # Loop through all stop line positions
-        for idx, stop_line in enumerate(stop_line_positions):
+        for idx, light in enumerate(light_positions):
             dis = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
-            val = dis(stop_line.pose.pose.position, car_position.position)
+            light_pos = Pose()
+            light_pos.position.x = light[0]
+            light_pos.position.y = light[1]
+
+            val = dis(light_pos.position, car_position.position)
             if val < minDist_val:
                 minDist_val = val
                 minDist_idx = idx
 
-        light = stop_line_positions[minDist_idx]
+        #rospy.logwarn("BEGIN_cloestTL=====")
+        #rospy.logwarn(minDist_idx)
+        #rospy.logwarn("END_cloestTL=====")
+        if minDist_idx >= 0:
+            light_pos_closest = Pose()
+            light_pos_closest.position.x = light_positions[minDist_idx][0]
+            light_pos_closest.position.y = light_positions[minDist_idx][1]
+            light_wp_closest = self.get_closest_waypoint(light_pos_closest)
 
-        if light:
-            state = self.get_light_state(light)
-            return light_wp, state
-        self.waypoints = None
+            if light_wp_closest > car_position_wpIdx:
+                light_3d = self.lights[minDist_idx]
+                state = self.get_light_state(light_3d)
+                #rospy.logwarn("BEGIN_DetectTL=====")
+                #rospy.logwarn("CarIdx=%d, Light_Idx=%d, Light_State=%d" % (car_position_wpIdx,
+                #    light_wp_closest,state)
+                #)
+                #rospy.logwarn(minDist_idx)
+                #rospy.logwarn("END_DetectTL=====")
+                return light_wp_closest, state
+
+        #self.waypoints = None
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':

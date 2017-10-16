@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import rospy
 import tf
-import cv2
 import time
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from std_msgs.msg import Header
