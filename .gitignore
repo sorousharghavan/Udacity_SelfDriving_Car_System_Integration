@@ -4,7 +4,6 @@ build
 devel
 
 profile.tmp
-log.*
 .ipynb_checkpoints
 :0
 .gitignore
