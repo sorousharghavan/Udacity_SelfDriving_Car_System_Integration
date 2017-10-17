@@ -5,6 +5,7 @@ from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped, PoseStamped
 import math
+from lowpass import LowPassFilter
 from styx_msgs.msg import Lane, Waypoint
 from twist_controller import Controller
 from yaw_controller import YawController
@@ -50,6 +51,8 @@ class DBWNode(object):
         steer_ratio = rospy.get_param('~steer_ratio', 14.8)
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+        self.map_x_center = rospy.get_param('~map_x_center', 1559.)
+        self.map_y_center = rospy.get_param('~map_y_center', 2152.)
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
@@ -59,7 +62,6 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         self.d = 0
-        # TODO: Create `TwistController` object
         map_carFeatures = {
             "vehicle_mass" : vehicle_mass,
             "fuel_capacity" : fuel_capacity,
@@ -74,7 +76,6 @@ class DBWNode(object):
         }
         self.controller = Controller(**map_carFeatures)
 
-        # TODO: Subscribe to all the topics you need to.
         # The dbw_node subscribes to the /current_velocity topic
         # along with the /twist_cmd topic to receive
         # TARGET linear(40 / 3.6) and angular velocities (vy / r^2)
@@ -89,7 +90,8 @@ class DBWNode(object):
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
         rospy.Subscriber('/final_waypoints', Lane, self.waypoints_cb, queue_size=1)
 
-        self.pid_throttle = PID(-0.5, -0.0001, -0.05, decel_limit, accel_limit)
+        self.lpf_brake = LowPassFilter(5, 1)
+        self.pid_throttle = PID(-0.25, -0.000, 0.0, -1, 1)
         self.pid_steerangel = PID(1 , 0, 0.5, -1*(30/180.0)*math.pi, (30/180.0)*math.pi)
         self.yaw_steerangel = YawController(
                     wheel_base, steer_ratio, 2,
@@ -177,8 +179,8 @@ class DBWNode(object):
         proj_y = proj_norm * n_y
         self.d = distance(x_x, x_y, proj_x, proj_y)
 
-        center_x = 1559 - self.final_waypoints[0].pose.pose.position.x
-        center_y = 2152 - self.final_waypoints[0].pose.pose.position.y
+        center_x = self.map_x_center - self.final_waypoints[0].pose.pose.position.x
+        center_y = self.map_y_center - self.final_waypoints[0].pose.pose.position.y
         centerToPos = distance(center_x, center_y, x_x, x_y)
         centerToRef = distance(center_x, center_y, proj_x, proj_y)
 
@@ -232,10 +234,9 @@ class DBWNode(object):
                         self.d,
                         self.pid_throttle,
                         self.pid_steerangel,
+                        self.lpf_brake,
                         self.yaw_steerangel
             )
-            rospy.loginfo("d = %f, angle = %f" % (self.d, steering))
-
             if self.dbw_isEnable_:
                 self.publish(throttle, brake, steering)
 
