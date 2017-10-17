@@ -134,8 +134,8 @@ class TLDetector(object):
         # fx = self.config['camera_info']['focal_length_x']
         # fy = self.config['camera_info']['focal_length_y']
 
-        fx = 2650
-        fy = 2250
+        fx = 1900
+        fy = 220
         image_width = self.config['camera_info']['image_width']
         image_height = self.config['camera_info']['image_height']
 
@@ -161,8 +161,8 @@ class TLDetector(object):
         z = point_in_world.z + trans[2]
 
         if x != 0:
-            u = int((- y / x) * fx + image_width / 2)
-            v = int((- z / x) * fy + image_height / 2)
+            u = int((- y / x) * fx + image_width / 2 - 25)
+            v = int((- z / x) * fy + image_height / 2 + 70)
         else:
             u = 0
             v = 0
