@@ -25,20 +25,21 @@ class PID(object):
         derivative = (error - self.last_error) / sample_time;
 
         y = self.kp * error + self.ki * self.int_val + self.kd * derivative;
-        """
-        rospy.logwarn("BEGIN_PID_INFO===")
-        #rospy.logwarn(self.pose)
-        rospy.logwarn("KP = %f", self.kp)
-        rospy.logwarn("ERROR = %f", error)
-        rospy.logwarn("KI = %f", self.ki)
-        rospy.logwarn("Int = %f", self.int_val)
-        rospy.logwarn("KD = %f", self.kd)
-        rospy.logwarn("DERVIATE = %f", derivative)
-        rospy.logwarn("ANGLE = %f", y)
-        """
 
+        if self.min == -5:
+            """
+            rospy.logwarn("KP = %f", self.kp)
+            rospy.logwarn("ERROR = %f", error)
+            rospy.logwarn("KI = %f", self.ki)
+            rospy.logwarn("Int = %f", self.int_val)
+            rospy.logwarn("KD = %f", self.kd)
+            rospy.logwarn("DERVIATE = %f", derivative)
+            rospy.logwarn("throttle = %f", y)
+            rospy.logwarn("Max=%f, Min=%f" % (self.max, self.min))
+            """
+        
         val = max(self.min, min(y, self.max))
-        #rospy.logwarn("Max=%f, Min=%f" % (self.max, self.min))
+
         if val > self.max:
             val = self.max
         elif val < self.min:
