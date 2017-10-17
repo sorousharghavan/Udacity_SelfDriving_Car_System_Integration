@@ -167,7 +167,7 @@ class TLDetector(object):
             u = 0
             v = 0
 
-        rospy.logwarn("%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f" % (point_in_world.x, point_in_world.y, point_in_world.z, trans[0], trans[1], trans[2], euler[0], euler[1], euler[2], u, v))
+        #rospy.logwarn("%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f" % (point_in_world.x, point_in_world.y, point_in_world.z, trans[0], trans[1], trans[2], euler[0], euler[1], euler[2], u, v))
         return (u, v)
 
     def get_light_state(self, light):
@@ -185,9 +185,9 @@ class TLDetector(object):
             return False
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-        time_idx = time.time()
-        fileName = "/home/huboqiang/Udacity_SelfDriving_Car_System_Integration/ros/image/tl.%f.png" % (time_idx)
-        cv2.imwrite(fileName, cv_image)
+        #time_idx = time.time()
+        #fileName = "/home/huboqiang/Udacity_SelfDriving_Car_System_Integration/ros/image/tl.%f.png" % (time_idx)
+        #cv2.imwrite(fileName, cv_image)
 
         x, y = self.project_to_image_plane(light.pose.pose.position)
         #rospy.logwarn("TL in the image |%d, %d| for %s: " % (x, y, fileName))
@@ -255,9 +255,13 @@ class TLDetector(object):
             light_pos_closest.position.y = light_positions[minDist_idx][1]
             light_wp_closest = self.get_closest_waypoint(light_pos_closest)
 
-            if light_wp_closest > car_position_wpIdx:
+            if light_wp_closest > (car_position_wpIdx-5):
                 light_3d = self.lights[minDist_idx]
-                state = self.get_light_state(light_3d)
+                """Using the state directly from the simulator for debug"""
+                #state = self.get_light_state(light_3d)
+                state = light_3d.state
+
+
                 #rospy.logwarn("BEGIN_DetectTL=====")
                 #rospy.logwarn("CarIdx=%d, Light_Idx=%d, Light_State=%d" % (car_position_wpIdx,
                 #    light_wp_closest,state)
