@@ -70,7 +70,7 @@ class WaypointUpdater(object):
             if e.g. 292,    means stop at 292th waypoints
         """
         self.stop_wpIdx = msg.data
-        rospy.logwarn("TL is %d" % (self.stop_wpIdx))
+        #rospy.logwarn("TL is %d" % (self.stop_wpIdx))
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
@@ -96,13 +96,26 @@ class WaypointUpdater(object):
             minDist_idx = 0
             minDist_val = sys.float_info.max
 
+            stop_pre = 3
+            slowdown_interval = 20
+            stop_end = 2
+            min_target_speed = 3.5
+            """
+            Should stop at stop_wpIdx-3
+            Stop from stop_wpIdx-23
+            Speed 0 in [stop_wpIdx-3,stop_wpIdx+2]
+            """
             if self.stop_wpIdx != -1:
-                for i in range(20):
-                    speed_target = 11.0*(20-i) / 20.0
-                    self.set_waypoint_velocity(self.waypoints, self.stop_wpIdx-25+i, speed_target)
+                for i in range(slowdown_interval):
+                    target_speed = 11.0*(slowdown_interval-i) / slowdown_interval
+                    if target_speed < min_target_speed:
+                        target_speed = min_target_speed
 
-                for i in range(50):
-                    self.set_waypoint_velocity(self.waypoints, self.stop_wpIdx-5+i, 0.0)
+                    idx_to_set = self.stop_wpIdx-(stop_pre+slowdown_interval)+i
+                    self.set_waypoint_velocity(self.waypoints, idx_to_set, target_speed)
+
+                for i in range(stop_pre+stop_end):
+                    self.set_waypoint_velocity(self.waypoints, self.stop_wpIdx-stop_pre+i, 0.0)
 
             for idx,wp in enumerate(self.waypoints):
 
@@ -126,39 +139,6 @@ class WaypointUpdater(object):
             lane = Lane()
             lane.header = self.waypoints_header
             lane.waypoints = [self.waypoints[prev_idx]] + outList
-            """
-            rospy.logwarn("===BEG_final_waypoints_pub===")
-            #rospy.logwarn("BEGIN_pose===")
-            #rospy.logwarn(self.pose.pose.position)
-            #rospy.logwarn("END_pose===")
-
-            #rospy.logwarn("BEGIN_prev_pos===")
-            #rospy.logwarn(outList[0].pose.pose.position)
-            #rospy.logwarn("END_prev_pos===")
-
-            #rospy.logwarn("BEGIN_current_pos===")
-            #rospy.logwarn(outList[1].pose.pose.position)
-            #rospy.logwarn("END_current_pos===")
-            rospy.logwarn("%d,%d" % (minDist_idx, self.stop_wpIdx))
-            if self.stop_wpIdx != -1:
-                if self.stop_wpIdx-minDist_idx > 3:
-                    n_forward_wps = self.stop_wpIdx-(minDist_idx-3)
-                    for i in range(n_forward_wps):
-                        speed_target = 11.0 * (n_forward_wps-i) / float(n_forward_wps)
-                        self.set_waypoint_velocity(lane.waypoints, i+1, speed_target)
-
-                    self.set_waypoint_velocity(lane.waypoints, n_forward_wps+1, 0.0)
-                    self.set_waypoint_velocity(lane.waypoints, n_forward_wps+2, 0.0)
-                    self.set_waypoint_velocity(lane.waypoints, n_forward_wps+3, 0.0)
-
-                else:
-                    self.set_waypoint_velocity(lane.waypoints, 1, 0.0)
-                    self.set_waypoint_velocity(lane.waypoints, 2, 0.0)
-                    self.set_waypoint_velocity(lane.waypoints, 3, 0.0)
-
-            rospy.logwarn(lane)
-            rospy.logwarn("===END_final_waypoints_pub===")
-            """
             self.final_waypoints_pub.publish(lane)
 
 
