@@ -32,6 +32,10 @@ class Controller(object):
         brake = 0
         if car_throttle > 0:
             throttle = car_throttle
+            if cte_speed < -5:
+                throttle = 1.0
+            if target_speed == 0.0:
+                throttle = 0.0
         else:
             if car_throttle >-0.1:
                 car_throttle = 0.0
@@ -42,7 +46,7 @@ class Controller(object):
         brake_max = max_car_mass*-1*self.map_carFeatures['decel_limit']*self.map_carFeatures['wheel_radius']
         brake = 0.5 * brake_max * brake
         brake = lpf_brake.filt(brake)
-        rospy.logwarn("[%f, %f, %f, %f]" % (current_speed, target_speed, throttle, brake))
+        #rospy.logwarn("[%f, %f, %f, %f]" % (current_speed, target_speed, throttle, brake))
         #rospy.logwarn("BEGIN_ctrl_throttle===")
         #rospy.logwarn(current_velocity.twist.linear.x)
         #rospy.logwarn(cte_speed)
