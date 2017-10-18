@@ -25,8 +25,8 @@ class TLDetector(object):
         self.camera_image = None
         self.lights = []
 
-        sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1, buff_size=10000000)
+        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1, buff_size=10000000)
 
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
@@ -35,8 +35,8 @@ class TLDetector(object):
         simulator. When testing on the vehicle, the color state will not be available. You'll need to
         rely on the position of the light and the camera image to predict it.
         '''
-        sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb, queue_size=1, buff_size=10000000)
+        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size=1, buff_size=10000000)
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -162,7 +162,7 @@ class TLDetector(object):
 
         if x != 0:
             u = int((- y / x) * fx + image_width / 2 - 25)
-            v = int((- z / x) * fy + image_height / 2 + 70)
+            v = int((- z / x) * fy + image_height / 2 + 0)
         else:
             u = 0
             v = 0
@@ -186,15 +186,15 @@ class TLDetector(object):
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
         #time_idx = time.time()
-        #fileName = "/home/huboqiang/Udacity_SelfDriving_Car_System_Integration/ros/image/tl.%f.png" % (time_idx)
+        #fileName = "/home/huboqiang/Udacity_SelfDriving_Car_System_Integration/ros/image/tl.%d.%f.png" % (light.state, time_idx)
         #cv2.imwrite(fileName, cv_image)
 
         x, y = self.project_to_image_plane(light.pose.pose.position)
         #rospy.logwarn("TL in the image |%d, %d| for %s: " % (x, y, fileName))
         img_width = cv_image.shape[1]
         img_height = cv_image.shape[0]
-        vertical_crop_size = 25
-        horizontal_crop_size = 5
+        vertical_crop_size = 200
+        horizontal_crop_size = 100
 
         #Check if x,y are inside image
         if x < 0 or y < 0 or x > img_width or y > img_height:
@@ -207,6 +207,9 @@ class TLDetector(object):
             top = y - vertical_crop_size if (y-vertical_crop_size) > 0 else 0
             cropped_image = cv_image[top:bottom,left:right]
             #Get classification
+            #time_idx = time.time()
+            #fileName = "/home/huboqiang/Udacity_SelfDriving_Car_System_Integration/ros/image/tl.%d.%f.png" % (light.state, time_idx)
+            #cv2.imwrite(fileName, cropped_image)
             return self.light_classifier.get_classification(cropped_image)
 
     def process_traffic_lights(self):
@@ -258,8 +261,8 @@ class TLDetector(object):
             if light_wp_closest > (car_position_wpIdx-5):
                 light_3d = self.lights[minDist_idx]
                 """Using the state directly from the simulator for debug"""
-                #state = self.get_light_state(light_3d)
-                state = light_3d.state
+                state = self.get_light_state(light_3d)
+                #state = light_3d.state
 
 
                 #rospy.logwarn("BEGIN_DetectTL=====")
