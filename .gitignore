@@ -2,7 +2,8 @@
 
 build
 devel
-
+image/*
+ros/image/*
 profile.tmp
 .ipynb_checkpoints
 :0
