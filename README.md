@@ -1,13 +1,30 @@
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
-### Installation 
+### Team Information:
 
-* Be sure that your workstation is running Ubuntu 16.04 Xenial Xerus or Ubuntu 14.04 Trusty Tahir. [Ubuntu downloads can be found here](https://www.ubuntu.com/download/desktop). 
+* Team Leader: Soroush Arghavan, soroush.arghavan@gmail.com
+* Team Members:
+  * Boqiang Hu, huboqiang@gmail.com
+  * Sergei Dmitriev, sergeidmv@gmail.com
+  * Ahmed Ghazal, ahmedghazal93@gmail.com
+  
+### Video of code being run with simulator
+[Link](https://www.youtube.com/watch?v=Q63nTLkf6zg)
+
+### Project architecture
+
+* DBW Node: Publishes throttle, brake and steering for the vehicle to use.
+* Traffic Light Detection: Detect the traffic light and its color from the /image_color. Once identified, the traffic light and its position waypoint index is published.
+* Waypoint Updater Node: A waypoint updater which subscribes to /base_waypoints and /current_pose and publishes to /final_waypoints. Uses /traffic_waypoint to change the waypoint target velocities before publishing to /final_waypoints. 
+
+### Installation
+
+* Be sure that your workstation is running Ubuntu 16.04 Xenial Xerus or Ubuntu 14.04 Trusty Tahir. [Ubuntu downloads can be found here](https://www.ubuntu.com/download/desktop).
 * If using a Virtual Machine to install Ubuntu, use the following configuration as minimum:
   * 2 CPU
   * 2 GB system memory
   * 25 GB of free hard drive space
-  
+
   The Udacity provided virtual machine has ROS and Dataspeed DBW already installed, so you can skip the next two steps if you are using this.
 
 * Follow these instructions to install ROS
@@ -34,6 +51,8 @@ pip install -r requirements.txt
 cd ros
 catkin_make
 source devel/setup.sh
+chmod u+x ./src/twist_controller/dbw_node.py ./src/waypoint_loader/waypoint_loader.py ./src/waypoint_updater/waypoint_updater.py ./src/tl_detector/tl_detector.py ./src/tl_detector/light_publisher.py ./src/camera_info_publisher/yaml_to_camera_info_publisher.py ./src/styx/server.py ./src/styx/unity_simulator_launcher.sh
+
 roslaunch launch/styx.launch
 ```
 4. Run the simulator
@@ -53,4 +72,3 @@ rosbag play -l traffic_light_bag_files/loop_with_traffic_light.bag
 cd CarND-Capstone/ros
 roslaunch launch/site.launch
 ```
-

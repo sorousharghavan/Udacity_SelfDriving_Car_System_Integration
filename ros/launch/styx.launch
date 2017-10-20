@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <launch>
+   <param name="/use_sim_time" value="false" />
     <!-- Simulator Bridge -->
     <include file="$(find styx)/launch/server.launch" />
 
