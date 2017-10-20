@@ -11,6 +11,9 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 ### Video of code being run with simulator
 [Link](https://www.youtube.com/watch?v=Q63nTLkf6zg)
 
+<a href="https://www.youtube.com/watch?v=Q63nTLkf6zg" target="_blank"><img src="http://img.youtube.com/vi/Q63nTLkf6zg/0.jpg" 
+alt="IMAGE ALT TEXT HERE" width="400" height="300" border="10" /></a>
+
 ### Project architecture
 
 * DBW Node: Publishes throttle, brake and steering for the vehicle to use.
