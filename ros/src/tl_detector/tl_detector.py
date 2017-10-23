@@ -11,7 +11,7 @@ import tf
 import yaml
 import math
 import sys
-import cv2
+#import cv2
 import time
 
 STATE_COUNT_THRESHOLD = 3
@@ -44,7 +44,12 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
+        self.tl_body_boundary = self.config['tl_body_boundary']
+        self.tl_light_boundary = self.config['tl_light_boundary']
+        self.light_classifier = TLClassifier(
+                tl_body_boundary=self.tl_body_boundary,
+                tl_light_boundary=self.tl_light_boundary
+        )
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -136,6 +141,8 @@ class TLDetector(object):
 
         fx = 1900
         fy = 220
+        x = 0
+        y = 0
         image_width = self.config['camera_info']['image_width']
         image_height = self.config['camera_info']['image_height']
 
@@ -148,17 +155,21 @@ class TLDetector(object):
             (trans, rot) = self.listener.lookupTransform("/base_link",
                   "/world", now)
 
+            rospy.logwarn("%s,%s" % (trans, rot))
+
+            euler = tf.transformations.euler_from_quaternion(rot)
+            sinyaw = math.sin(euler[2])
+            cosyaw = math.cos(euler[2])
+
+            x = point_in_world.x * cosyaw - point_in_world.y * sinyaw + trans[0]
+            y = point_in_world.x * sinyaw + point_in_world.y * cosyaw + trans[1]
+            z = point_in_world.z + trans[2]
+
         except (tf.Exception, tf.LookupException, tf.ConnectivityException):
             rospy.logerr("Failed to find camera to map transform")
+            return (400, 200)
 
         # Calculate 2D position of light in image
-        euler = tf.transformations.euler_from_quaternion(rot)
-        sinyaw = math.sin(euler[2])
-        cosyaw = math.cos(euler[2])
-
-        x = point_in_world.x * cosyaw - point_in_world.y * sinyaw + trans[0]
-        y = point_in_world.x * sinyaw + point_in_world.y * cosyaw + trans[1]
-        z = point_in_world.z + trans[2]
 
         if x != 0:
             u = int((- y / x) * fx + image_width / 2 - 25)
@@ -185,32 +196,36 @@ class TLDetector(object):
             return False
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-        #time_idx = time.time()
-        #fileName = "/home/huboqiang/Udacity_SelfDriving_Car_System_Integration/ros/image/tl.%d.%f.png" % (light.state, time_idx)
-        #cv2.imwrite(fileName, cv_image)
-
-        x, y = self.project_to_image_plane(light.pose.pose.position)
-        #rospy.logwarn("TL in the image |%d, %d| for %s: " % (x, y, fileName))
-        img_width = cv_image.shape[1]
-        img_height = cv_image.shape[0]
-        vertical_crop_size = 200
-        horizontal_crop_size = 100
-
-        #Check if x,y are inside image
-        if x < 0 or y < 0 or x > img_width or y > img_height:
-            return TrafficLight.UNKNOWN
-        else:
-		    #Crop traffic light from image and resize it to (50,50)
-            left = x - horizontal_crop_size if (x-horizontal_crop_size) > 0 else 0
-            right = x + horizontal_crop_size if (x+horizontal_crop_size) < img_width else img_width
-            bottom = y + vertical_crop_size if (y+vertical_crop_size) < img_height else img_height
-            top = y - vertical_crop_size if (y-vertical_crop_size) > 0 else 0
-            cropped_image = cv_image[top:bottom,left:right]
-            #Get classification
+        # In simulator
+        if self.tl_body_boundary == "None":
             #time_idx = time.time()
-            #fileName = "/home/huboqiang/Udacity_SelfDriving_Car_System_Integration/ros/image/tl.%d.%f.png" % (light.state, time_idx)
-            #cv2.imwrite(fileName, cropped_image)
-            return self.light_classifier.get_classification(cropped_image)
+            #fileName = "/home/huboqiang/Udacity_SelfDriving_Car_System_Integration/ros/image/tl.%f.%d.png" % (time_idx, light.state)
+            #cv2.imwrite(fileName, cv_image)
+
+            x, y = self.project_to_image_plane(light.pose.pose.position)
+            #rospy.logwarn("TL in the image |%d, %d| for %s: " % (x, y, fileName))
+            img_width = cv_image.shape[1]
+            img_height = cv_image.shape[0]
+            vertical_crop_size = 200
+            horizontal_crop_size = 100
+
+            #Check if x,y are inside image
+            if x < 0 or y < 0 or x > img_width or y > img_height:
+                return TrafficLight.UNKNOWN
+            else:
+		        #Crop traffic light from image and resize it to (50,50)
+                left = x - horizontal_crop_size if (x-horizontal_crop_size) > 0 else 0
+                right = x + horizontal_crop_size if (x+horizontal_crop_size) < img_width else img_width
+                bottom = y + vertical_crop_size if (y+vertical_crop_size) < img_height else img_height
+                top = y - vertical_crop_size if (y-vertical_crop_size) > 0 else 0
+                cropped_image = cv_image[top:bottom,left:right]
+                #Get classification
+                #time_idx = time.time()
+                #fileName = "/home/huboqiang/Udacity_SelfDriving_Car_System_Integration/ros/image/tl.%d.%f.png" % (light.state, time_idx)
+                #cv2.imwrite(fileName, cropped_image)
+                return self.light_classifier.get_classification(cropped_image)
+        else:
+            pass
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
