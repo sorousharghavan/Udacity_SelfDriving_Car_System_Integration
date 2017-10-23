@@ -195,8 +195,9 @@ class TLDetector(object):
             self.prev_light_loc = None
             return False
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
         # In simulator
+        #print(self.tl_body_boundary, self.tl_body_boundary == "None")
         if self.tl_body_boundary == "None":
             #time_idx = time.time()
             #fileName = "/home/huboqiang/Udacity_SelfDriving_Car_System_Integration/ros/image/tl.%f.%d.png" % (time_idx, light.state)
@@ -225,7 +226,12 @@ class TLDetector(object):
                 #cv2.imwrite(fileName, cropped_image)
                 return self.light_classifier.get_classification(cropped_image)
         else:
-            pass
+            idx = self.light_classifier.get_classification(cv_image)
+            #time_idx = time.time()
+            #fileName = "/home/huboqiang/Udacity_SelfDriving_Car_System_Integration/ros/image/tl.%f.%d.png" % (time_idx, idx)
+            #cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
+            #cv2.imwrite(fileName, cv_image)
+            return idx
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -273,7 +279,15 @@ class TLDetector(object):
             light_pos_closest.position.y = light_positions[minDist_idx][1]
             light_wp_closest = self.get_closest_waypoint(light_pos_closest)
 
-            if light_wp_closest > (car_position_wpIdx-5):
+            condition = light_wp_closest > (car_position_wpIdx-5)
+            if self.tl_body_boundary != "None":
+                condition = (abs(light_wp_closest+8 - (car_position_wpIdx)) < 5 or
+                             abs(light_wp_closest+8 - (car_position_wpIdx+60)) < 5)
+
+                # 48 cannot see TL
+                light_wp_closest += 3
+
+            if condition:
                 light_3d = self.lights[minDist_idx]
                 """Using the state directly from the simulator for debug"""
                 state = self.get_light_state(light_3d)
